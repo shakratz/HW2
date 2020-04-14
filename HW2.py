@@ -6,8 +6,8 @@ import scipy.io as sio
 from ex2_funcsions import *
 
 # FILL IN YOUR ID
-# ID1 = 123456789
-# ID2 = 987654321
+# ID1 = 200940500
+# ID2 = 204251144
 
 
 #####################################PART 1: Lucas-Kanade Optical Flow################################################
@@ -18,7 +18,7 @@ I1 = IMG['I1']
 I2 = IMG['I2']
 
 # Choose parameters
-WindowSize = None  # Add your value here!
+WindowSize = 5  # Add your value here!
 MaxIter = 10  # Add your value here!
 NumLevels = 4  # Add your value here!
 
@@ -36,7 +36,7 @@ print('RMS of processed frames: ' + str(np.sum(np.sum(np.abs((I1 - I2_warp) ** 2
 
 
 ###########################################3PART 2: Video Stabilization################################################
-
+""""
 # Choose parameters
 WindowSize = None  # Add your value here!
 MaxIter = None  # Add your value here!
@@ -47,3 +47,4 @@ InputVidName = 'input.avi'
 
 # Stabilize video - save the stabilized video inside the function
 StabilizedVid = LucasKanadeVideoStabilization(InputVidName, WindowSize, MaxIter, NumLevels)
+"""
