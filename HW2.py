@@ -19,8 +19,8 @@ I2 = IMG['I2']
 
 # Choose parameters
 WindowSize = None  # Add your value here!
-MaxIter = None  # Add your value here!
-NumLevels = None  # Add your value here!
+MaxIter = 10  # Add your value here!
+NumLevels = 4  # Add your value here!
 
 # Compute optical flow using LK algorithm
 (u, v) = LucasKanadeOpticalFlow(I1, I2, WindowSize, MaxIter, NumLevels)
@@ -46,4 +46,4 @@ NumLevels = None  # Add your value here!
 InputVidName = 'input.avi'
 
 # Stabilize video - save the stabilized video inside the function
-StabilizedVid = LucasKanadeVideoStabilization(InputVid, WindowSize, MaxIter, NumLevels)
+StabilizedVid = LucasKanadeVideoStabilization(InputVidName, WindowSize, MaxIter, NumLevels)
