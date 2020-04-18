@@ -1,6 +1,7 @@
 import math
 import cv2
 import numpy as np
+from scipy.interpolate import griddata
 
 
 def LucasKanadeStep(I1, I2, WindowSize):
@@ -30,7 +31,7 @@ def LucasKanadeStep(I1, I2, WindowSize):
 
             # B = [Ix Iy] as CS
             B = np.array([np.column_stack(Ixseg), np.column_stack(Iyseg)])
-            B = np.reshape(B, (25, 2))
+            B = np.reshape(B, (WindowSize ** 2, 2))
             # It is the difference between frames
             It = I2seg - I1seg
 
@@ -38,8 +39,8 @@ def LucasKanadeStep(I1, I2, WindowSize):
             BBT = np.matmul(cv2.transpose(B), B)
             BIt = np.matmul(cv2.transpose(B), It)
 
-            # In case det(A)=0 it is not invertible
-            if np.linalg.det(BBT) == 0:
+            # In case det(A)=0 it is not invertible - if close to 0 their is no motion (background)
+            if np.linalg.det(BBT) < 0.1:
                 Dp = [0, 0]
             else:
                 Dp = -np.matmul(np.linalg.inv(BBT), BIt)
@@ -51,7 +52,7 @@ def LucasKanadeStep(I1, I2, WindowSize):
     return du, dv
 
 
-def WarpImage(I, u, v):
+"""def WarpImage(I, u, v):
     num_rows, num_cols = I.shape[:2]
     I_warp = np.ones((num_rows, num_cols)) * (-1)  # holes will be marked as "-1"
 
@@ -74,11 +75,27 @@ def WarpImage(I, u, v):
             I_warp[xmov, ymov] = I[x, y]
 
     # Fill holes
-    for y in range(num_cols):
-        for x in range(num_rows):
+    for x in range(num_rows):
+        for y in range(num_cols):
             if I_warp[x, y] == -1:
                 I_warp[x, y] = I[x, y]
 
+    return I_warp"""
+
+def WarpImage(I, u, v):
+    num_rows, num_cols = I.shape[:2]
+    v_vec = np.tile(np.linspace(0, num_cols - 1, num_cols), (num_rows, 1))
+    u_vec = np.tile(np.linspace(0, num_rows - 1, num_rows).reshape(-1, 1), (1, num_cols))
+    umov = np.matrix.flatten(u_vec + u).reshape(-1, 1)
+    vmov = np.matrix.flatten(v_vec + v).reshape(-1, 1)
+
+    grid_x, grid_y = np.mgrid[0:(num_rows - 1):num_rows * 1j, 0:(num_cols - 1):num_cols * 1j]
+    points = np.concatenate((umov, vmov), axis=1)
+    values = np.matrix.flatten(I)
+    I_warp = griddata(points, values, (grid_x, grid_y), method='linear')
+
+    # Fill holes
+    I_warp[np.isnan(I_warp)] = I[np.isnan(I_warp)]
     return I_warp
 
 
@@ -147,4 +164,49 @@ def LucasKanadeOpticalFlow(I1, I2, WindowSize, MaxIter, NumLevels):
 #################### PART 3 ###############################
 
 def LucasKanadeVideoStabilization(InputVid, WindowSize, MaxIter, NumLevels):
-    u = 1
+    orig_video = cv2.VideoCapture(InputVid)
+
+    # video output parameters
+    fourcc = orig_video.get(6)
+    fps = orig_video.get(5)
+    frameSize = ((int(orig_video.get(3))-WindowSize**2), (int(orig_video.get(4))-WindowSize**2))
+    hasFrames, I1 = orig_video.read()
+
+    # define video output
+    output_video = cv2.VideoWriter('StabilizedVid_200940500_204251144.avi', int(fourcc), fps, frameSize, isColor=False)
+
+    # write first frame to output video
+    output_video.write(I1)
+
+    # stabilization using LK with first frame
+    I_gray = cv2.cvtColor(I1, cv2.COLOR_BGR2GRAY)
+    numFrames = int(InputVid.get(7))
+    size = (int(orig_video.get(3)), int(orig_video.get(4)))
+
+    for i in range (1,numFrames):
+        v = np.zeros(size)
+        u = np.zeros(size)
+        hasFrames, frame = orig_video.read()
+        if hasFrames:  # hasFrames returns a bool, if frame is read correctly - it will be True
+            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+            (du, dv) = LucasKanadeOpticalFlow(I_gray, gray_frame, WindowSize, MaxIter,NumLevels)
+            u += du
+            v += dv
+            # Move the frame according to Delta p
+            frame_warp = WarpImage(gray_frame, u, v)
+
+            # update the frame for next LK step
+            I_gray = gray_frame.copy()
+
+            # write frame to output video
+            frame_warp = cv2.cvtColor(frame_warp.astype(np.uint8), cv2.COLOR_GRAY2RGB)
+            output_video.write(frame_warp[0:frameSize[0], 0:frameSize[1]])
+
+        else:
+            break
+    orig_video.release()
+    output_video.release()
+
+
+

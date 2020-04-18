@@ -29,11 +29,22 @@ NumLevels = 4  # Add your value here!
 I2_warp = WarpImage(I2, u, v)
 
 # The RMS should decrease as the warped image (I2_warp) should be more similar to I1
-print('RMS of original frames: ' + str(np.sum(np.sum(np.abs((I1 - I2) ** 2)))))
-print('RMS of processed frames: ' + str(np.sum(np.sum(np.abs((I1 - I2_warp) ** 2)))))
+print('RMS of original frames: ' + str(np.sqrt(np.average(np.power(I2 - I1, 2)))))
+print('RMS of processed frames: ' + str(np.sqrt(np.average(np.power(I2_warp - I1, 2)))))
+"""print('RMS of original frames: ' + str(np.sum(np.sum(np.abs((I1 - I2) ** 2)))))
+print('RMS of processed frames: ' + str(np.sum(np.sum(np.abs((I1 - I2_warp) ** 2)))))"""
 
 # Plot I1,I2,I2_warp
-
+plt.subplot(1, 3, 1)
+plt.imshow(I1, cmap='gray')
+plt.title('I1'), plt.xticks([]), plt.yticks([])
+plt.subplot(1, 3, 2)
+plt.imshow(I2, cmap='gray')
+plt.title('I2'), plt.xticks([]), plt.yticks([])
+plt.subplot(1, 3, 3)
+plt.imshow(I2_warp, cmap='gray')
+plt.title('I2_warp'), plt.xticks([]), plt.yticks([])
+plt.show()
 
 ###########################################3PART 2: Video Stabilization################################################
 """"
