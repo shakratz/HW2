@@ -1,10 +1,17 @@
 import math
+import sys
+
 import cv2
 import numpy as np
+from scipy import linalg
 from scipy.interpolate import griddata
 import matplotlib.pyplot as plt
 
-"""
+
+def is_invertible(a):
+    return a.shape[0] == a.shape[1] and np.linalg.matrix_rank(a) == a.shape[0]
+
+
 def LucasKanadeStep(I1, I2, WindowSize):
     hw = round(WindowSize / 2)  # hw = half window size
     num_rows, num_cols = I2.shape[:2]
@@ -18,21 +25,23 @@ def LucasKanadeStep(I1, I2, WindowSize):
         for j in range(hw, num_cols - hw):
             B = []
             # Splitting to WindowSize
-            I1seg = I1[i - hw:i + hw + 1, j - hw:j + hw + 1].flatten('F')
-            I2seg = I2[i - hw:i + hw + 1, j - hw:j + hw + 1].flatten('F')
-            Ixseg = Ix[i - hw:i + hw + 1, j - hw:j + hw + 1].flatten('F')
-            Iyseg = Iy[i - hw:i + hw + 1, j - hw:j + hw + 1].flatten('F')
+            SmallElementsY = (Iy[i - hw:i + hw + 1, j - hw:j + hw + 1] < 0.025).sum()
+            SmallElementsX = (Ix[i - hw:i + hw + 1, j - hw:j + hw + 1] < 0.025).sum()
+            if SmallElementsX > (WindowSize ** 2 * 0.25) and SmallElementsY > (WindowSize ** 2 * 0.25):
+                Dp = [0, 0]
+            else:
+                I1seg = I1[i - hw:i + hw + 1, j - hw:j + hw + 1].flatten('F')
+                I2seg = I2[i - hw:i + hw + 1, j - hw:j + hw + 1].flatten('F')
+                Ixseg = Ix[i - hw:i + hw + 1, j - hw:j + hw + 1].flatten('F')
+                Iyseg = Iy[i - hw:i + hw + 1, j - hw:j + hw + 1].flatten('F')
 
-            # B = [Ix Iy] as CS
-            B = np.array([Ixseg, Iyseg]).T
-            # It is the difference between frames
-            It = I2seg - I1seg
+                # B = [Ix Iy] as CS
+                B = np.array([Ixseg, Iyseg]).T
+                # It is the difference between frames
+                It = I2seg - I1seg
 
-            # Delta p
-            BTB = np.matmul(cv2.transpose(B), B)
-
-            # In case det(BTB)=0 it is not invertible - if close to 0 their is no motion (background)
-            if np.linalg.det(BTB) != 0:
+                # Delta p
+                BTB = np.matmul(cv2.transpose(B), B)
                 BTIt = np.matmul(cv2.transpose(B), It)
                 Dp = np.matmul(np.linalg.inv(BTB), BTIt)  # Without minus since Sobel contain minus
 
@@ -41,7 +50,8 @@ def LucasKanadeStep(I1, I2, WindowSize):
             dv[i, j] = Dp[1]
 
     return du, dv
-"""
+
+
 """def WarpImage(I, u, v):
     num_rows, num_cols = I.shape[:2]
     I_warp = np.ones((num_rows, num_cols)) * (-1)  # holes will be marked as "-1"
@@ -73,38 +83,6 @@ def LucasKanadeStep(I1, I2, WindowSize):
     return I_warp"""
 
 
-def LucasKanadeStep(I1, I2, WindowSize):
-    height = I1.shape[0]
-    width = I2.shape[1]
-    u = np.zeros((height, width))
-    v = np.zeros((height, width))
-
-    # Creating Matrices for Calculation #
-    Ix = cv2.Sobel(I1, cv2.CV_64F, 1, 0, ksize=5)
-    Iy = cv2.Sobel(I1, cv2.CV_64F, 0, 1, ksize=5)
-    It = I2 - I1
-
-    for i in range(0, height - WindowSize, WindowSize):
-        for j in range(0, width - WindowSize, WindowSize):
-            B = np.zeros((WindowSize ** 2, 2))
-            It_window = np.zeros((WindowSize ** 2, 1))
-            # Creating the Vectors #
-            for n in range(WindowSize):
-                for m in range(WindowSize):
-                    B[n * WindowSize + m, 0] = Ix[i + n, j + m]
-                    B[n * WindowSize + m, 1] = Iy[i + n, j + m]
-                    It_window[n * WindowSize + m] = It[i + n, j + m]
-
-            # In case det(A)=0 it is not invertible - if close to 0 their is no motion (background)
-            if np.linalg.det(np.matmul(B.T, B)) != 0:
-                dp = np.matmul(np.matmul(np.linalg.inv(np.matmul(B.T, B)), B.T), It_window)
-
-            u[i:i + WindowSize, j:j + WindowSize] = dp[0] * np.ones((WindowSize, WindowSize))
-            v[i:i + WindowSize, j:j + WindowSize] = dp[1] * np.ones((WindowSize, WindowSize))
-
-    return u, v
-
-
 def WarpImage(I, u, v):
     num_rows, num_cols = I.shape[:2]
     u_vec = np.tile(np.linspace(0, num_cols - 1, num_cols), (num_rows, 1))
@@ -123,6 +101,7 @@ def WarpImage(I, u, v):
 
 
 def LucasKanadeOpticalFlow(I1, I2, WindowSize, MaxIter, NumLevels):
+    du_dv_th = 0.0001   # NOTE - maybe should change with the pyr level in factor of 2
     I1_pyr = []
     I2_pyr = []
     I1_pyr.append(I1)
@@ -142,10 +121,12 @@ def LucasKanadeOpticalFlow(I1, I2, WindowSize, MaxIter, NumLevels):
 
     # Main Algorithm
     for pyrLevel in range(NumLevels)[::-1]:  # starting with the smallest images
+        print('Running pyr level:' + str(pyrLevel))
         # Using the down sampled image
         I1down = I1_pyr[pyrLevel]
         I2down = I2_pyr[pyrLevel]
-
+        TotalPixels = I1down.shape[1] * I1down.shape[0]
+        PixelTh = TotalPixels * 0.8
         for it in range(MaxIter):
             # Move the image I2 according to Delta p
             I2_warp = WarpImage(I2down, u, v)
@@ -153,7 +134,11 @@ def LucasKanadeOpticalFlow(I1, I2, WindowSize, MaxIter, NumLevels):
             # One step - Calculate Delta p
             (du, dv) = LucasKanadeStep(I1down, I2_warp, WindowSize)
 
-            if du.any() == 0 and dv.any() == 0:  # If there is no more change in u and v - break
+            # If there is no more change in u and v - break
+
+            SmallElementsY = (np.absolute(du) < du_dv_th).sum()
+            SmallElementsX = (np.absolute(dv) < du_dv_th).sum()
+            if SmallElementsX > PixelTh and SmallElementsY > PixelTh:
                 break
 
             # Update u and v
@@ -189,7 +174,7 @@ def LucasKanadeVideoStabilization(InputVid, WindowSize, MaxIter, NumLevels):
     output_video = cv2.VideoWriter('StabilizedVid_200940500_204251144.avi', int(fourcc), fps, frameSize)
 
     # write first frame to output video
-    #output_video.write(I1[HalfWb:frameSize[0] - HalfWt, HalfWb:frameSize[1] - HalfWt])
+    # output_video.write(I1[HalfWb:frameSize[0] - HalfWt, HalfWb:frameSize[1] - HalfWt])
     output_video.write(I1)
 
     # stabilization using LK with first frame
@@ -218,7 +203,7 @@ def LucasKanadeVideoStabilization(InputVid, WindowSize, MaxIter, NumLevels):
 
             # write frame to output video
             frame_warp = cv2.cvtColor(frame_warp.astype(np.uint8), cv2.COLOR_GRAY2RGB)
-            #output_video.write(frame_warp[HalfWb:frameSize[0] - HalfWt, HalfWb:frameSize[1] - HalfWt])
+            # output_video.write(frame_warp[HalfWb:frameSize[0] - HalfWt, HalfWb:frameSize[1] - HalfWt])
             output_video.write(frame_warp)
         else:
             break
