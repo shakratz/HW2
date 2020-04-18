@@ -179,33 +179,33 @@ def LucasKanadeVideoStabilization(InputVid, WindowSize, MaxIter, NumLevels):
     HalfWt = (WindowSize ** 2) // 2
     HalfWb = (WindowSize ** 2) // 2 + (WindowSize ** 2) % 2
     # video output parameters
-    fourcc = orig_video.get(6)
-    fps = orig_video.get(5)
+    fourcc = orig_video.get(cv2.CAP_PROP_FOURCC)
+    fps = orig_video.get(cv2.CAP_PROP_FPS)
     frameSize = ((int(orig_video.get(4)) - WindowSize ** 2), (int(orig_video.get(3)) - WindowSize ** 2))
     frameSize = (int(orig_video.get(4)), int(orig_video.get(3)))
     hasFrames, I1 = orig_video.read()
 
     # define video output
-    output_video = cv2.VideoWriter('StabilizedVid_200940500_204251144.avi', int(fourcc), fps, frameSize, isColor=False)
+    output_video = cv2.VideoWriter('StabilizedVid_200940500_204251144.avi', int(fourcc), fps, frameSize)
 
     # write first frame to output video
     #output_video.write(I1[HalfWb:frameSize[0] - HalfWt, HalfWb:frameSize[1] - HalfWt])
     output_video.write(I1)
 
     # stabilization using LK with first frame
-    I_gray = cv2.cvtColor(I1, cv2.COLOR_BGR2GRAY)
-    numFrames = int(orig_video.get(7))
+    I_gray = cv2.cvtColor(I1, cv2.COLOR_RGB2GRAY)
+    numFrames = int(orig_video.get(cv2.CAP_PROP_FRAME_COUNT))
     size = (int(orig_video.get(4)), int(orig_video.get(3)))
 
     v = np.zeros(size)
     u = np.zeros(size)
 
-    for i in range(1, 30):
+    for i in range(1, 3):
         print('Frame number ' + str(i + 1) + ' from ' + str(numFrames) + ' is in process')
 
         hasFrames, frame = orig_video.read()
         if hasFrames:  # hasFrames returns a bool, if frame is read correctly - it will be True
-            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            gray_frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
 
             (du, dv) = LucasKanadeOpticalFlow(I_gray, gray_frame, WindowSize, MaxIter, NumLevels)
             u += np.mean(du) * np.ones(size)
