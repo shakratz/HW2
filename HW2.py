@@ -26,12 +26,19 @@ ps.print_stats()
 
 with open('cProfiler.txt', 'w+') as f:
     f.write(s.getvalue())
-    """
+   
+I1color = cv2.imread('frame1.jpg')
+I2color = cv2.imread('frame2.jpg')
+I1 = cv2.cvtColor(I1color, cv2.COLOR_RGB2GRAY)
+I2 = cv2.cvtColor(I2color, cv2.COLOR_RGB2GRAY)
 
+"""
 # Load images I1,I2
 IMG = sio.loadmat('HW2_PART1_IMAGES.mat')
+
 I1 = IMG['I1']
 I2 = IMG['I2']
+
 start_time = time.time()
 # Choose parameters
 WindowSize = 5  # Add your value here!
@@ -51,7 +58,7 @@ print('RMS of original frames: ' + str(np.sum(np.sum(np.abs((I1 - I2) ** 2)))))
 print('RMS of processed frames: ' + str(np.sum(np.sum(np.abs((I1 - I2_warp) ** 2)))))
 print("Run Time: --- %.02f seconds ---" % (time.time() - start_time))
 
-"""
+
 # Plot I1,I2,I2_warp
 plt.subplot(1, 3, 1)
 plt.imshow(I1, cmap='gray')
@@ -62,10 +69,10 @@ plt.title('I2'), plt.xticks([]), plt.yticks([])
 plt.subplot(1, 3, 3)
 plt.imshow(I2_warp, cmap='gray')
 plt.title('I2_warp'), plt.xticks([]), plt.yticks([])
-plt.show()"""
+plt.show()
 
 ###########################################3PART 2: Video Stabilization################################################
-
+"""
 start_time = time.time()
 # Choose parameters
 WindowSize = 5  # Add your value here!
@@ -78,3 +85,5 @@ InputVidName = 'input.avi'
 # Stabilize video - save the stabilized video inside the function
 StabilizedVid = LucasKanadeVideoStabilization(InputVidName, WindowSize, MaxIter, NumLevels)
 print("Run Time: --- %.02f seconds ---" % (time.time() - start_time))
+
+"""

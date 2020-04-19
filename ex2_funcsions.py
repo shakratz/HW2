@@ -1,6 +1,6 @@
 import math
 import sys
-
+import scipy
 import cv2
 import numpy as np
 from scipy import linalg
@@ -59,18 +59,18 @@ def LucasKanadeStep(I1, I2, WindowSize):
 def WarpImage(I, u, v):
     num_rows, num_cols = I.shape[:2]
     # Finding the movement of pixel
-    u_vec = np.tile(np.linspace(0, num_cols - 1, num_cols), (num_rows, 1))
-    v_vec = np.tile(np.linspace(0, num_rows - 1, num_rows).reshape(-1, 1), (1, num_cols))
-    umov = np.matrix.flatten(u_vec + u).reshape(-1, 1)
-    vmov = np.matrix.flatten(v_vec + v).reshape(-1, 1)
+    grid_x, grid_y = np.mgrid[0:(num_rows - 1):num_rows * 1j, 0:(num_cols - 1):num_cols * 1j]
+
+    umov = np.matrix.flatten(grid_y + u).reshape(-1, 1)
+    vmov = np.matrix.flatten(grid_x + v).reshape(-1, 1)
 
     # Parameters for interpolation
-    grid_x, grid_y = np.mgrid[0:(num_rows - 1):num_rows * 1j, 0:(num_cols - 1):num_cols * 1j]
     points = np.concatenate((vmov, umov), axis=1)
     values = np.matrix.flatten(I)
 
     # Interpolation
     I_warp = griddata(points, values, (grid_x, grid_y), method='linear')
+    # I_warp = scipy.interpolate.LinearNDInterpolator(points, values)
 
     # Fill holes
     I_warp[np.isnan(I_warp)] = I[np.isnan(I_warp)]
@@ -183,8 +183,8 @@ def LucasKanadeVideoStabilization(InputVid, WindowSize, MaxIter, NumLevels):
             elif np.sqrt(np.average(
                     np.power(gray_frame - I_gray, 2))) > RMS_thr:  # calculate change if frame not close to last frame
                 (du, dv) = LucasKanadeOpticalFlow(I_gray, gray_frame, WindowSize, MaxIter, NumLevels)
-                u += np.mean(du) * np.ones(size)  # because all the frame move in the same way
-                v += np.mean(dv) * np.ones(size)  # because all the frame move in the same way
+                u += np.median(du) * np.ones(size)  # because all the frame move in the same way
+                v += np.median(dv) * np.ones(size)  # because all the frame move in the same way
 
                 # Move the frame according to Delta p
                 frame_warp = WarpImage(gray_frame, u, v)
@@ -193,7 +193,7 @@ def LucasKanadeVideoStabilization(InputVid, WindowSize, MaxIter, NumLevels):
 
             RMS1 = np.sqrt(np.average(np.power(gray_frame - I1_gray, 2)))
             RMS2 = np.sqrt(np.average(np.power(gray_frame - I_gray, 2)))
-            print('RMS to I1 {:.02f} RMS to last frame {:.02f}'.format(RMS1, RMS2))
+            print('RMS to I1 {:.02f} RMS to last frame {:.02f}\n'.format(RMS1, RMS2))
 
             # update the frame for next LK step
             I_gray = gray_frame.copy()
