@@ -26,8 +26,9 @@ ps.print_stats()
 
 with open('cProfiler.txt', 'w+') as f:
     f.write(s.getvalue())
-   
-I1color = cv2.imread('frame1.jpg')
+   """
+"""
+I1color = cv2.imread('frame0.jpg')
 I2color = cv2.imread('frame2.jpg')
 I1 = cv2.cvtColor(I1color, cv2.COLOR_RGB2GRAY)
 I2 = cv2.cvtColor(I2color, cv2.COLOR_RGB2GRAY)
@@ -42,8 +43,8 @@ I2 = IMG['I2']
 start_time = time.time()
 # Choose parameters
 WindowSize = 5  # Add your value here!
-MaxIter = 20  # Add your value here!
-NumLevels = 5  # Add your value here!
+MaxIter = 10  # Add your value here!
+NumLevels = 4  # Add your value here!
 
 # Compute optical flow using LK algorithm
 (u, v) = LucasKanadeOpticalFlow(I1, I2, WindowSize, MaxIter, NumLevels)
@@ -52,12 +53,11 @@ NumLevels = 5  # Add your value here!
 I2_warp = WarpImage(I2, u, v)
 
 # The RMS should decrease as the warped image (I2_warp) should be more similar to I1
-print('RMS of original frames: ' + str(np.sqrt(np.average(np.power(I2 - I1, 2)))))
-print('RMS of processed frames: ' + str(np.sqrt(np.average(np.power(I2_warp - I1, 2)))))
-print('RMS of original frames: ' + str(np.sum(np.sum(np.abs((I1 - I2) ** 2)))))
-print('RMS of processed frames: ' + str(np.sum(np.sum(np.abs((I1 - I2_warp) ** 2)))))
+print('RMS of original frames: %.02f' % (np.sqrt(np.average(np.power(I2 - I1, 2)))))
+print('RMS of processed frames: %.02f' % (np.sqrt(np.average(np.power(I2_warp - I1, 2)))))
+print('RMS of original frames: %.02f' % (np.sum(np.sum(np.abs((I1 - I2) ** 2)))))
+print('RMS of processed frames: %.02f' % (np.sum(np.sum(np.abs((I1 - I2_warp) ** 2)))))
 print("Run Time: --- %.02f seconds ---" % (time.time() - start_time))
-
 
 # Plot I1,I2,I2_warp
 plt.subplot(1, 3, 1)
