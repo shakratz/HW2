@@ -44,7 +44,7 @@ start_time = time.time()
 # Choose parameters
 WindowSize = 5  # Add your value here!
 MaxIter = 10  # Add your value here!
-NumLevels = 4  # Add your value here!
+NumLevels = 5  # Add your value here!
 
 # Compute optical flow using LK algorithm
 (u, v) = LucasKanadeOpticalFlow(I1, I2, WindowSize, MaxIter, NumLevels)

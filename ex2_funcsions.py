@@ -48,7 +48,7 @@ def LucasKanadeStep(I1, I2, WindowSize):
             BTB = np.matmul(cv2.transpose(B), B)
             BTIt = np.matmul(cv2.transpose(B), It)
             try:
-                Dp = -np.matmul(np.linalg.pinv(BTB), BTIt)  # Without minus since Sobel contain minus
+                Dp = np.matmul(np.linalg.pinv(BTB), BTIt)  # Without minus since Sobel contain minus
             except np.linalg.LinAlgError:
                 print('Non invertible matrix!')
                 Dp = [0, 0]
@@ -59,8 +59,8 @@ def LucasKanadeStep(I1, I2, WindowSize):
 
     return du, dv
 
-
 """
+
 def bilinear_interpolate(I, y, x):
     num_rows, num_cols = I.shape[:2]
     x = np.asarray(x)
