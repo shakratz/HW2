@@ -34,7 +34,7 @@ I1 = cv2.cvtColor(I1color, cv2.COLOR_RGB2GRAY)
 I2 = cv2.cvtColor(I2color, cv2.COLOR_RGB2GRAY)
 
 """
-# Load images I1,I2
+"""# Load images I1,I2
 IMG = sio.loadmat('HW2_PART1_IMAGES.mat')
 
 I1 = IMG['I1']
@@ -43,7 +43,7 @@ I2 = IMG['I2']
 start_time = time.time()
 # Choose parameters
 WindowSize = 5  # Add your value here!
-MaxIter = 10  # Add your value here!
+MaxIter = 100  # Add your value here!
 NumLevels = 5  # Add your value here!
 
 # Compute optical flow using LK algorithm
@@ -69,14 +69,14 @@ plt.title('I2'), plt.xticks([]), plt.yticks([])
 plt.subplot(1, 3, 3)
 plt.imshow(I2_warp, cmap='gray')
 plt.title('I2_warp'), plt.xticks([]), plt.yticks([])
-plt.show()
+plt.show()"""
 
 ###########################################3PART 2: Video Stabilization################################################
-"""
+
 start_time = time.time()
 # Choose parameters
-WindowSize = 5  # Add your value here!
-MaxIter = 20  # Add your value here!
+WindowSize = 20  # Add your value here!
+MaxIter = 60  # Add your value here!
 NumLevels = 5  # Add your value here!
 
 # Load video file
@@ -86,4 +86,4 @@ InputVidName = 'input.avi'
 StabilizedVid = LucasKanadeVideoStabilization(InputVidName, WindowSize, MaxIter, NumLevels)
 print("Run Time: --- %.02f seconds ---" % (time.time() - start_time))
 
-"""
+
